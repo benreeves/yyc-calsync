@@ -1,27 +1,9 @@
-import dotenv from 'dotenv';
 import Webflow from 'webflow-api';
-import axios from 'axios';
 import Bottleneck from 'bottleneck';
+import { EventsQuery } from './services/events';
+import { getDatasource } from './db';
+import { CommunityEvent } from './entity/CommunityEvent';
 
-dotenv.config();
-
-const port = process.env.PORT || 3000;
-const hours = Number(process.env.HOURS);
-
-const webflow = new Webflow({ token: process.env.WEBFLOW_TOKEN });
-
-
-interface Event {
-	name: string;
-	startDate: string;
-	endDate: string;
-	description: string;
-	link: string;
-	community: {
-		name: string;
-		primaryColor: string;
-	};
-}
 
 interface CMSItem {
 	collectionId: string;
@@ -41,15 +23,29 @@ interface CMSItem {
 }
 
 export async function syncWebflow() {
+
+	const webflow = new Webflow({ token: process.env.WEBFLOW_TOKEN });
+	const connection = await getDatasource();
+	const repo = connection.getRepository(CommunityEvent);
+
+
+	async function syncItem(cmsItem: CMSItem) {
+		try {
+			const res = await webflow.createItem(cmsItem);
+			return { ok: true, id: res._id, err: null };
+		} catch (err) {
+			console.log(err);
+			return { ok: false, id: null, err: err };
+		}
+	}
+
+
 	try {
-		const res = await axios.get(
-			`${process.env.CALENDAR_API}?startDate=${new Date(
-				new Date().setFullYear(new Date().getFullYear() - 1)
-			)}&endDate=${new Date(
-				new Date().setFullYear(new Date().getFullYear() + 1)
-			)}`
-		);
-		const events: Event[] = res.data;
+		const query = new EventsQuery(repo);
+		const sd = new Date( new Date().setFullYear(new Date().getFullYear() - 1)).toISOString();
+		const ed = new Date( new Date().setFullYear(new Date().getFullYear() + 1)).toISOString();
+
+		const events = await query.search({minDate: sd, maxDate: ed});
 
 		const limiter = new Bottleneck({
 			minTime: 1000
@@ -75,7 +71,18 @@ export async function syncWebflow() {
 		});
 
 		try {
-			await publishSite();
+			const itemIds = resArr.map(x => x.id);
+			await webflow.publishItems({
+				collectionId: process.env.EVENTS_COLLECTION_ID,
+				itemIds: itemIds,
+				live: true
+			});
+			// await webflow.publishSite({
+			// 	siteId: process.env.WEBFLOW_SITE_ID!,
+			// 	domains: [
+			// 		process.env.WEBFLOW_SITE_SUBDOMAIN!,
+			// 	],
+			// });
 		} catch (err) {
 			return {
 				message: "Error occured publishing site, items only staged",
@@ -102,7 +109,7 @@ export async function syncWebflow() {
 	}
 };
 
-function createCMSItem(evt: Event): CMSItem {
+function createCMSItem(evt: CommunityEvent): CMSItem {
 	const name = evt.name;
 	const slug = str_to_slug(name);
 	const startDate = evt.startDate;
@@ -117,8 +124,8 @@ function createCMSItem(evt: Event): CMSItem {
 		fields: {
 			name: name,
 			slug: slug,
-			'event-date-start': startDate,
-			'event-date-time-end': endDate,
+			'event-date-start': startDate.toISOString(),
+			'event-date-time-end': endDate.toISOString(),
 			'summary-of-the-event': description,
 			'full-description': description,
 			'event-signup-link': link,
@@ -131,24 +138,6 @@ function createCMSItem(evt: Event): CMSItem {
 
 }
 
-async function syncItem(cmsItem: CMSItem) {
-	try {
-		const res = await webflow.createItem(cmsItem);
-		return { ok: true, err: null };
-	} catch (err) {
-		console.log(err);
-		return { ok: false, err: err };
-	}
-}
-
-async function publishSite() {
-	await webflow.publishSite({
-		siteId: process.env.WEBFLOW_SITE_ID!,
-		domains: [
-			process.env.WEBFLOW_SITE_SUBDOMAIN!,
-		],
-	});
-}
 
 const str_to_slug = (str: string): string => {
 	str = str.replace(/^\s+|\s+$/g, '');
