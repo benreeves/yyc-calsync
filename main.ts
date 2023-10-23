@@ -1,10 +1,10 @@
 import dotenv from "dotenv";
 import { logger } from "./src/logger";
 import { getDatasource, initialize } from "./src/db";
-import { CalsyncRepository } from "src/calsync-repository";
-import { MeetupClient, MeetupClientConfig } from "src/services/meetupClient";
-import { GCalFactory } from "src/services/gcal";
-import { EventSyncService } from "src/event-sync-service";
+import { CalsyncRepository } from "./src/calsync-repository";
+import { MeetupClient, MeetupClientConfig } from "./src/services/meetupClient";
+import { GCalFactory } from "./src/services/gcal";
+import { EventSyncService } from "./src/event-sync-service";
 
 dotenv.config();
 logger.info("Starting app");

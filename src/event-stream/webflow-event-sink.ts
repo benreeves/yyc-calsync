@@ -1,6 +1,6 @@
-import { CommunityEvent } from "./entity/CommunityEvent";
-import { EventSink } from "./event-stream/event-source-sink";
-import { logger } from "./logger";
+import { CommunityEvent } from "../entity/CommunityEvent";
+import { EventSink } from "../event-stream/event-source-sink";
+import { logger } from "../logger";
 import Bottleneck from 'bottleneck';
 import Webflow from 'webflow-api';
 
@@ -36,13 +36,13 @@ export class WebflowEventSink implements EventSink {
         const {toCreate, toUpdate} = this.determineEventsToSync(events, existingEvents);
         // ditch toUpdate, not implemented yet
         await this.createEventsInWebflow(toCreate);
-        await this.postProcess();
+        // await this.postProcess();
     }
 
     async fetchExistingEvents(): Promise<CMSEvent[]> {
         const existingItems = await this.webflow.items({ collectionId: process.env.EVENTS_COLLECTION_ID });
         const castedItems: CMSEvent[] = existingItems.map(x => x as unknown).map(x => x as CMSEvent);
-        console.log(castedItems[0]);
+        // console.log(castedItems[0]);
         return castedItems;
     }
 
@@ -63,6 +63,7 @@ export class WebflowEventSink implements EventSink {
     }
 
     async createEventsInWebflow(events: CommunityEvent[]) {
+        if(!events || events.length == 0) return [];
         const limiter = new Bottleneck({
             minTime: 1000
         });
@@ -72,6 +73,12 @@ export class WebflowEventSink implements EventSink {
         });
 
         const resArr = await Promise.all(tasks);
+        const itemIds = resArr.map(x => x.id);
+        await this.webflow.publishItems({
+            collectionId: process.env.EVENTS_COLLECTION_ID,
+            itemIds: itemIds,
+            live: true
+        });
         return resArr;
     }
 

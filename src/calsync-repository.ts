@@ -40,7 +40,6 @@ export class CalsyncRepository {
             .createQueryBuilder("hub")
             .innerJoinAndSelect("hub.communities", "community")
             .where("hub.id = :hubId", { hubId })
-            .select("community.id")
             .getOne();
 
         return hubQueryResult.communities;
@@ -117,6 +116,7 @@ export class CalsyncRepository {
     }
 
     private async deleteEvents(manager: any, toDelete: string[]): Promise<void> {
+        if(!toDelete || toDelete.length == 0) return;
         await manager
             .createQueryBuilder()
             .delete()
@@ -156,15 +156,19 @@ export class CalsyncRepository {
     }
 
     async getEventXrefsByHubId(hubId: string, eventIds: string[]): Promise<HubEventXref[]> {
-        const xrefs = await this.connection
+        console.log(eventIds);
+        let builder = this.connection
             .getRepository(HubEventXref)
             .createQueryBuilder("xref")
             .innerJoin("xref.hub", "hub")
             .innerJoinAndSelect("xref.communityEvent", "evt")
-            .where("hub.id = :hubId", { hubId })
-            .andWhere("evt.id IN (:...ids)", { ids: eventIds})
-            .getMany();
-
+            .where("hub.id = :hubId", { hubId });
+        
+        if (eventIds && eventIds.length > 0) {
+            builder = builder
+                .andWhere("evt.id IN (:...ids)", { ids: eventIds})
+        }
+        const xrefs = await builder.getMany();
         return xrefs.sort((a, b) => a.id.localeCompare(b.id));
     }
 

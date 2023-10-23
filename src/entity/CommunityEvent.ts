@@ -1,4 +1,4 @@
-import { EventSchema } from "src/services/event-schema";
+import { EventSchema } from "src/event-schema";
 import {
     Entity,
     PrimaryGeneratedColumn,

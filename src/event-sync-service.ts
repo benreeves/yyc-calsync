@@ -27,6 +27,10 @@ export class EventSyncService {
             // Fetch all existing events
             const eventsFromFeeds = await this.fetchAllEventsFromFeeds();
             logger.info(`Fetched ${eventsFromFeeds.length} events from feeds`);
+            if(eventsFromFeeds.length == 0) {
+                logger.info(`No events, returning`);
+                return
+            }
 
             const savedEvents = await this.repo.getEventsForHub(this.hub.id);
             const consolidator = new EventFeedConsolidator(eventsFromFeeds, savedEvents);
@@ -34,11 +38,13 @@ export class EventSyncService {
             // Split events into save, update, delete, in database
             await this.repo.processEventActions(consolidator.actions);
             logger.info('Processed event actions in the repository');
+            // Requery so that we have fully hydrated events
+            const eventsInDb = await this.repo.getEventsForHub(this.hub.id);
 
             // Send events to the various sinks
             const sinks = this.getEventSinks();
             for(const sink of sinks) {
-                await sink.processEvents(eventsFromFeeds);
+                await sink.processEvents(eventsInDb);
             }
             logger.info('Completed sending events to sinks');
         } catch (error) {
@@ -59,7 +65,7 @@ export class EventSyncService {
             let allEvents: CommunityEvent[] = [];
             for(let feed of allFeeds) {
                 const feedEvents = await feed.getEventStream(null, null);
-                const asCommunityEvents = feedEvents.map(feed.convertToCommunityEvent);
+                const asCommunityEvents = feedEvents.map(x => feed.convertToCommunityEvent(x));
                 allEvents.push(...asCommunityEvents);
             }
 
@@ -81,10 +87,12 @@ export class EventSyncService {
     getEventSourcesFor(community: Community): EventFeed[] {
         const feeds: EventFeed[] = [];
         if(community.googleCalendarId) {
+            logger.debug(`Creating gcal source for ${community.name}`)
             const gcal = new GCalEventSource(community, this.gcalFactory);
             feeds.push(gcal);
         }
         if(community.meetupUrl) {
+            logger.debug(`Creating meetup source for ${community.name}`)
             const meetup = new MeetupEventSource(community, this.meetupClient);
             feeds.push(meetup);
         }

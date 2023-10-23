@@ -1,7 +1,7 @@
 import { calendar_v3, google } from "googleapis";
 import { JWT } from "google-auth-library";
 import moment from "moment";
-import { MemoizeExpiring } from "./memoize";
+import { MemoizeExpiring } from "../common";
 import {  GaxiosResponse } from "gaxios";
 import { EventSchema } from "../event-schema";
 import { logger } from "../logger";

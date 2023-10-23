@@ -29,11 +29,11 @@ export class GCalEventSource implements EventFeed {
             googleEvents = await cal.listEvents(minDate, maxDate);
         }catch(e){
             logger.error(
-                `Failed reaching google community, continuing with meetup`
+                `Failed fetching from google events for ${this.community.name}`
             );
         }
 
-        throw new Error("Method not implemented.");
+        return googleEvents;
     }
 
     convertToCommunityEvent(eventSchema: EventSchema): CommunityEvent {
