@@ -35,7 +35,7 @@ export class HubEventXref {
     communityEventId: string;
 
     @Column()
-    hubEventExternalId: string;
+    hubEventExternalId: string; // Hub events are saved to a google calendar, this is the mapping
 
     @Column()
     communityEventExternalId: string;

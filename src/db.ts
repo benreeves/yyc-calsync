@@ -46,7 +46,7 @@ export async function initialize() {
 		database: process.env.TYPEORM_DATABASE,
 		synchronize: true,
 		entities: entities,
-		logging: true
+		logging: false
 	});
 	await ds.initialize();
 
