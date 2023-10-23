@@ -3,7 +3,7 @@ import { JWT } from "google-auth-library";
 import moment from "moment";
 import { MemoizeExpiring } from "./memoize";
 import {  GaxiosResponse } from "gaxios";
-import { EventSchema } from "./event-schema";
+import { EventSchema } from "../event-schema";
 import { logger } from "../logger";
 
 export class ServiceAccountCreds {
@@ -132,6 +132,7 @@ export class GCal {
     extractEvents(data: calendar_v3.Schema$Events): EventSchema[] {
         return data.items.map((item) => {
             return {
+                id: item.id,
                 name: item.summary,
                 externalId: item.id,
                 externalRecurringId: item.recurringEventId,
@@ -190,9 +191,9 @@ export class GCal {
         return response.data;
     }
 
-    async deleteEvent(calendarId: string, googleEventId: string) {
+    async deleteEvent(googleEventId: string) {
         await this.api.events.delete({
-            calendarId: calendarId,
+            calendarId: this.calendarId,
             eventId: googleEventId,
         });
     }

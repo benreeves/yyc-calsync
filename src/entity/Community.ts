@@ -51,6 +51,9 @@ export class Community implements Group {
     logoUrl: string;
 
     @Column({ nullable: true })
+    meetupUrl: string | null;
+
+    @Column({ nullable: true })
     primaryColor: string;
 
     @Column((type) => Locale)
