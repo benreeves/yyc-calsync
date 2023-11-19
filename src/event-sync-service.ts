@@ -33,7 +33,8 @@ export class EventSyncService {
             }
 
             const savedEvents = await this.repo.getEventsForHub(this.hub.id);
-            const consolidator = new EventFeedConsolidator(eventsFromFeeds, savedEvents);
+
+            const consolidator = new EventFeedConsolidator(eventsFromFeeds, savedEvents, true);
 
             // Split events into save, update, delete, in database
             await this.repo.processEventActions(consolidator.actions);

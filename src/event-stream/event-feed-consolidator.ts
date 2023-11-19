@@ -20,7 +20,9 @@ export class EventFeedConsolidator {
 
     constructor(
         private events: CommunityEvent[],
-        private savedEvents: CommunityEvent[]
+        private savedEvents: CommunityEvent[],
+        private nodelete: boolean = false
+
     ) { 
         this.actions = this.processEvents()
     }
@@ -63,11 +65,15 @@ export class EventFeedConsolidator {
         for (const [eid, evt] of Object.entries(dbMap)) {
             // The event no longer exists in the external feeds - DELETE!
             if (!feedMap[eid]) {
-                actions.push({ action: ActionType.DELETE, event: evt });
+                if (!this.nodelete) {
+                    actions.push({ action: ActionType.DELETE, event: evt });
+                }
             } else {
                 const feedEvent = feedMap[eid];
                 if (this.needsPatch(feedEvent, evt)) {
+                    const ogid = evt.id; // store original id so we dont override
                     Object.assign(evt, feedEvent);  // Update the DB event with the feed data
+                    evt.id = ogid;
                     actions.push({ action: ActionType.UPDATE, event: evt });
                 }
                 // Remove the processed event from feedMap to avoid duplicate handling
@@ -77,7 +83,9 @@ export class EventFeedConsolidator {
 
         // Loop through the remaining events in the feedMap to determine ADD actions
         for (const evt of Object.values(feedMap)) {
-            actions.push({ action: ActionType.ADD, event: evt });
+            const toSAve = Object.assign({}, evt);
+            toSAve.id = undefined; // No recycling ids
+            actions.push({ action: ActionType.ADD, event: toSAve });
         }
 
         return actions;

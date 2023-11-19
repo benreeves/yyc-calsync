@@ -206,7 +206,7 @@ export class CalsyncRepository {
     async getEventsForHub(hubId: string): Promise<CommunityEvent[]> {
         const events = await this.connection.getRepository(CommunityEvent)
             .createQueryBuilder("events")
-            .innerJoin("events.community", "community")
+            .innerJoinAndSelect("events.community", "community")
             .innerJoin("community.hubs", "hub")
             .where("hub.id = :hubId", { hubId })
             .getMany() ;

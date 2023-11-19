@@ -85,6 +85,7 @@ export class WebflowEventSink implements EventSink {
 
 	async createEventInWebflow(event: CommunityEvent) {
         const cmsItem = this.createCMSItem(event);
+        console.log(cmsItem);
 		try {
 			logger.info(`Syncing item ${cmsItem.fields.name}`);
 			const res = await this.webflow.createItem(cmsItem);
@@ -104,6 +105,9 @@ export class WebflowEventSink implements EventSink {
 
     // Helper methods like createEventInWebflow, updateEventInWebflow, and str_to_slug go here
     createCMSItem(evt: CommunityEvent): CMSItem {
+        if(!evt){
+            throw Error('Event not defined')
+        }
         const name = evt.name;
         const slug = this.strToSlug(name);
         const startDate = evt.startDate;
