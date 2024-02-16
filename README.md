@@ -6,7 +6,7 @@ This repository fetches events from multiple different event sources, such as me
 
 ## Installation and Commands
 
-Copy and save the .env file from the project page in the YYC Data Notion https://www.notion.so/yycdata/Event-Feed-v2-fbee799f8551422cb30cd9d5ddb191da?pvs=4
+For YYC Data Society volunteers, you can copy and save the .env file from the project page in the YYC Data Notion https://www.notion.so/yycdata/Event-Feed-v2-fbee799f8551422cb30cd9d5ddb191da?pvs=4. Otherwise, you will need to create and configure a postgres database, a meetup API key, and a google service account.
 
 ```sh
 $ npm i
